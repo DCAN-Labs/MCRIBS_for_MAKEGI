@@ -95,7 +95,7 @@ then
 		sed -i -e 's/cerebellum_closing = 5/cerebellum_closing = 15/' $T
 
 		find SurfReconDeformable/$SUBJID -type f -delete
-		recon-neonatal-cortex -r `pwd` -c $T -s $SUBJID -t $OMP_NUM_THREADS -v -v -v -v -d -d -f -ensure-pial-is-outside-white-surface -j $J $USEFASTCOLLISION 2>&1 | tee -a logs/$SUBJID.log
+		recon-neonatal-cortex -r `pwd` -c $T -s $SUBJID -t $OMP_NUM_THREADS -v -v -v -v -d -d -f -j $J $USEFASTCOLLISION 2>&1 | tee -a logs/$SUBJID.log
 		SECONDRECONRETURNCODE=${PIPESTATUS[0]}
 		rm -f $T
 	fi
