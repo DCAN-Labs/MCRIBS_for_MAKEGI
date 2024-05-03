@@ -918,6 +918,8 @@ def subdivide_brain(name, segmentation, white_labels, cortex_labels, right_label
         if cortical_hull_dmap:
             opts['output-inner-cortical-distance'] = os.path.abspath(cortical_hull_dmap)
             makedirs(opts['output-inner-cortical-distance'])
+        opts['hemispheres']: = os.path.join('masks', 'hemis.nii.gz')
+              
         makedirs(name)
         run('subdivide-brain-image', args=[segmentation, name], opts=opts)
     return name
