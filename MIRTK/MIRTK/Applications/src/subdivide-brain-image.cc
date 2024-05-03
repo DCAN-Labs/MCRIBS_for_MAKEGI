@@ -1008,7 +1008,7 @@ int main(int argc, char *argv[])
       }
     }
     else if (OPTION("-hemispheres")) {
-      hemis_name = "/masks/hemis.nii.gz";
+      hemis_name = ARGUMENT;
     }
     else if (OPTION("-right-hemisphere") || OPTION("-rh")) {
       rhmask_name = GetFileNameOrAddLabels(OPTIDX, argc, argv, rhmask_labels);
