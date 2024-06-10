@@ -932,6 +932,9 @@ ByteImage Resample(const ByteImage &regions, const Plane &rl_plane, const Plane 
 // -----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
+  printf("Got here.\n");
+  // sleep(300);
+
   Point p;
 
   REQUIRES_POSARGS(0);
