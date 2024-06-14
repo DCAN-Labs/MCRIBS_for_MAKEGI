@@ -393,7 +393,10 @@ def remove_intersections(iname, oname=None, mask=None, max_attempt=10, smooth_it
             if itr == 1 and verbose > 0:
                 print(("Trying to resolve {} remaining self-intersections of {}".format(cur, iname)))
             if itr > max_attempt:
-                raise Exception("Failed to resolve self-intersections of {}".format(iname))
+                # raise Exception("Failed to resolve self-intersections of {}".format(iname))
+                print("Failed to resolve self-intersections of {}".format(iname))
+                break
+
             run('dilate-scalars', args=[oname, oname], opts={'array': _collision_mask_array, 'iterations': nbr})
             if mask:
                 run('calculate-element-wise', args=[oname], opts=[('scalars', _collision_mask_array), ('mul', mask), ('out', oname)])
@@ -430,7 +433,9 @@ def remove_white_pial_intersections(iname, oname=None, mask=None, max_attempt=10
             if itr == 1 and verbose > 0:
                 print(("Trying to resolve {} remaining self-intersections of {}".format(cur, iname)))
             if itr > max_attempt:
-                raise Exception("Failed to resolve self-intersections of {}".format(iname))
+                # raise Exception("Failed to resolve self-intersections of {}".format(iname))
+                print("Failed to resolve self-intersections of {}".format(iname))
+                break
             # smooth intersected convex regions (sulci) of pial surface
             run('calculate-element-wise', args=[oname], opts=[('point-data', region_id_array), ('label', 3, 4),
                                                               ('mask', _collision_mask_array), ('set', 1), ('pad', 0),
@@ -918,6 +923,8 @@ def subdivide_brain(name, segmentation, white_labels, cortex_labels, right_label
         if cortical_hull_dmap:
             opts['output-inner-cortical-distance'] = os.path.abspath(cortical_hull_dmap)
             makedirs(opts['output-inner-cortical-distance'])
+        opts['hemispheres'] = os.path.join('/masks', 'hemis.nii.gz')
+              
         makedirs(name)
         run('subdivide-brain-image', args=[segmentation, name], opts=opts)
     return name
@@ -1374,8 +1381,8 @@ def recon_white_surface(name, t2w_image, wm_mask, gm_mask, cortex_mesh, bs_cb_me
 
     """
 
-    default_mask_distance_weight = 0.
-    default_edge_distance_weight = 1.
+    default_mask_distance_weight = 0.5
+    default_edge_distance_weight = 0.5
 
     use_mask_distance = float(opts.get('distance', default_mask_distance_weight)) > 0.
     use_edge_distance = float(opts.get('edge-distance', default_edge_distance_weight)) > 0.
