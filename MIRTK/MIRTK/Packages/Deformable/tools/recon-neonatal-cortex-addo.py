@@ -42,7 +42,7 @@ except:
 	from contextlib2 import ExitStack  # Python 2 backport
 
 try:
-	from configparser import SafeConfigParser  # Python 3
+	from configparser import ConfigParser as SafeConfigParser  # Python 3
 except:
 	from ConfigParser import SafeConfigParser  # Python 2
 
