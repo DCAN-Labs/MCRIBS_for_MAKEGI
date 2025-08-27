@@ -250,7 +250,7 @@ def main():
                 break
 
             #print(curLine)
-            mat = re.match('^set\(ITK_VERSION_(MAJOR|MINOR|PATCH) "(\d+)"\)$', curLine)
+            mat = re.match(r'^set\(ITK_VERSION_(MAJOR|MINOR|PATCH) "(\d+)"\)$', curLine)
             if not mat is None:
                 if mat.group(1) == "MAJOR":
                     ITKMajorVersion = mat.group(2)
@@ -298,7 +298,7 @@ def main():
                 break
 
             #print(curLine)
-            mat = re.match('^SET\(VTK_(MAJOR|MINOR|BUILD)_VERSION "(\d+)"\)$', curLine)
+            mat = re.match(r'^SET\(VTK_(MAJOR|MINOR|BUILD)_VERSION "(\d+)"\)$', curLine)
             if not mat is None:
                 if mat.group(1) == "MAJOR":
                     VTKMajorVersion = mat.group(2)

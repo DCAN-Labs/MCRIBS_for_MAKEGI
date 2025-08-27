@@ -42,7 +42,7 @@ except:
     from contextlib2 import ExitStack  # Python 2 backport
 
 try:
-    from configparser import SafeConfigParser  # Python 3
+    from configparser import ConfigParser as SafeConfigParser  # Python 3
 except:
     from ConfigParser import SafeConfigParser  # Python 2
 
@@ -864,7 +864,10 @@ config = get_default_config(work_dir=args.work_dir, section=args.section)
 config.read(os.path.join(args.work_dir, 'recon-neonatal-cortex.cfg'))
 if args.config:
     with open(args.config, 'r') as config_file:
-        config.readfp(config_file)
+        try:
+            config.readfp(config_file)
+        except AttributeError:
+            config.read_file(config_file)
 
 # set global flags
 neoctx.verbose = max(0, args.verbose - 1)

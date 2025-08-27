@@ -34,6 +34,9 @@
 #include "mirtk/LinearInterpolateImageFunction.h"
 #include "mirtk/EuclideanDistanceTransform.h"
 
+#include <unordered_set>
+#include <queue>
+
 using namespace mirtk;
 
 
@@ -297,7 +300,23 @@ void InitializeSelectionLUT(const UnorderedSet<int> &labels, bool selected[NUM])
   for (auto label : labels) selected[label] = true;
 }
 
-// -----------------------------------------------------------------------------
+// Define a hash function for Point
+struct PointHash {
+  std::size_t operator()(const Point &p) const {
+    return std::hash<int>()(p._x) ^ std::hash<int>()(p._y) ^ std::hash<int>()(p._z);
+  }
+};
+
+// Helper function to check if a PointSet contains a given point
+bool PointSetContains(const PointSet &points, const Point &point) {
+  for (size_t i = 0; i < points.Size(); ++i) {
+    if (points.GetPoint(i) == point) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /// Get set of boundary voxel
 void AddBoundaryPoints(PointSet                &points,
                        const ByteImage         &regions,
@@ -309,19 +328,43 @@ void AddBoundaryPoints(PointSet                &points,
   bool selection1[NUM], selection2[NUM], boundary;
   InitializeSelectionLUT(region1, selection1);
   InitializeSelectionLUT(region2, selection2);
+  // Keep track of points added to avoid duplicates
+  std::unordered_set<Point, PointHash> addedPoints;
+
   for (int k = 0; k < regions.Z(); ++k)
   for (int j = 0; j < regions.Y(); ++j)
   for (int i = 0; i < regions.X(); ++i) {
     if (selection1[regions(i, j, k)]) {
       boundary = false;
-      for (int nk = k-1; nk <= k+1; ++nk) {
+      for (int dk = -2; dk <= 2; ++dk) {
+        int nk = k + dk;
         if (nk < 0 || nk >= regions.Z()) continue;
-        for (int nj = j-1; nj <= j+1; ++nj) {
+        for (int dj = -2; dj <= 2; ++dj) {
+          int nj = j + dj;
           if (nj < 0 || nj >= regions.Y()) continue;
-          for (int ni = i-1; ni <= i+1; ++ni) {
+          for (int di = -2; di <= 2; ++di) {
+            int ni = i + di;
             if (ni < 0 || ni >= regions.X()) continue;
-            if (selection2[regions(ni, nj, nk)]) {
+            if ((abs(di) + abs(dj) + abs(dk) <= 2) && selection2[regions(ni, nj, nk)]) {
               boundary = true;
+              // Add the specified points
+              std::vector<Point> pointsToAdd = {
+                Point(i, j, k),
+                Point(i + di, j, k),
+                Point(i, j + dj, k),
+                Point(i, j, k + dk),
+                Point(i + di / 2, j, k),
+                Point(i, j + dj / 2, k),
+                Point(i, j, k + dk / 2),
+                Point(i + di, j + dj, k + dk)
+              };
+
+              for (auto &p : pointsToAdd) {
+                if (wc) regions.ImageToWorld(p);
+                if (addedPoints.insert(p).second) {
+                  points.Add(p);
+                }
+              }
               break;
             }
           }
@@ -329,13 +372,55 @@ void AddBoundaryPoints(PointSet                &points,
         }
         if (boundary) break;
       }
-      if (boundary) {
-        p = Point(i, j, k);
-        if (wc) regions.ImageToWorld(p);
-        points.Add(p);
-      }
     }
   }
+}
+
+// Function to find the largest contiguous component in the PointSet
+PointSet GetLargestComponent(const PointSet &inputPoints)
+{
+  PointSet largestComponent;
+  std::unordered_set<Point, PointHash> visited;
+  std::vector<PointSet> components;
+
+  std::vector<std::vector<int>> neighbors = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+
+  for (size_t idx = 0; idx < inputPoints.Size(); ++idx) {
+    Point point = inputPoints.GetPoint(idx);
+    if (visited.find(point) == visited.end()) {
+      PointSet currentComponent;
+      std::queue<Point> queue;
+      queue.push(point);
+      visited.insert(point);
+
+      while (!queue.empty()) {
+        Point p = queue.front();
+        queue.pop();
+        currentComponent.Add(p);
+
+        // Check face-sharing neighbors
+        for (const auto &n : neighbors) {
+          Point neighbor(p._x + n[0], p._y + n[1], p._z + n[2]);
+          if (PointSetContains(inputPoints, neighbor) && visited.insert(neighbor).second) {
+            queue.push(neighbor);
+          }
+        }
+      }
+
+      components.push_back(currentComponent);
+    }
+  }
+
+  // Find the largest component
+  size_t maxSize = 0;
+  for (const auto &component : components) {
+    if (component.Size() > maxSize) {
+      maxSize = component.Size();
+      largestComponent = component;
+    }
+  }
+
+  return largestComponent;
 }
 
 // -----------------------------------------------------------------------------
